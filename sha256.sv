@@ -1,20 +1,10 @@
+`ifndef SHA256_SV
+`define SHA256_SV
 
-//`define sha_round_16(t, t1)                                                                     \
-//   assign T1[``t] = H[``t1] + sigma1(E[``t1]) + ch(E[``t1], F[``t1], G[``t1]) + K[``t] + W[``t]; \
-//   assign T2[``t] = sigma0(A[``t1]) + maj(A[``t1], B[``t1], C[``t1]);                           \
-//	assign H[``t]   = G[``t1];           \
-//	assign G[``t]   = F[``t1];           \
-//	assign F[``t]   = E[``t1];           \
-//	assign E[``t]   = D[``t1] + T1[``t]; \
-//	assign D[``t]   = C[``t1];           \
-//	assign C[``t]   = B[``t1];           \
-//	assign B[``t]   = A[``t1];           \
-//	assign A[``t]   = T1[``t] + T2[``t];
-//
-//`define sha_round(t, t1, t2, t7, t15, t16)                                     \
-//   assign W[``t]   = W[``t16] + gamma0(W[``t15]) + W[``t7] + gamma1(W[``t2]);  \
-//	`sha_round_16(t, t1)
+`include "consts.sv"
+`include "sha256_common.sv"
 
+// TODO: Recall what W1*_K are meant for.
 //struct block_state {
 //  uint merkle_root;
 //  uint timestamp;
@@ -24,24 +14,6 @@
 //  uint W16, W17, W19;
 //  uint W16_K, W17_K, W19_K;
 //};
-
-//`define htonl(x)                                 \
-//  ((((x) & 32'hff000000U) >> 24)                   \
-//   | (((x) & 32'h00ff0000U) >>  8)                 \
-//   | (((x) & 32'h0000ff00U) <<  8)                 \
-//   | (((x) & 32'h000000ffU) << 24))
-//
-//`define ntohl(x)                                 \
-//  ((((x) & 32'hff000000U) >> 24)                   \
-//   | (((x) & 32'h00ff0000U) >>  8)                 \
-//   | (((x) & 32'h0000ff00U) <<  8)                 \
-//   | (((x) & 32'h000000ffU) << 24))
-
-`ifndef SHA256_SV
-`define SHA256_SV
-
-`include "consts.sv"
-`include "sha256_common.sv"
 
 task sha256_init(
 		output reg [7:0][31:0] qdigest);
@@ -92,15 +64,6 @@ task sha256_block(
 	sha256_state_t state;
 	state.W[15:0] = {W15, W14, W13, W12, W11, W10, W9, W8,
 						  W7,  W6,  W5,  W4,  W3,  W2,  W1, W0};
-
-//   int W16, W17,      W19;
-//
-//	int           W18,      W20, W21, W22, W23;
-//	int W24, W25, W26, W27, W28, W29, W30, W31;
-//	int W32, W33, W34, W35, W36, W37, W38, W39;
-//	int W40, W41, W42, W43, W44, W45, W46, W47;
-//	int W48, W49, W50, W51, W52, W53, W54, W55;
-//	int W56, W57, W58, W59, W60, W61, W62, W63;
 
 	sha_round_1(0, digest, state);
 

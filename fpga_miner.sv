@@ -6,15 +6,6 @@ module fpga_miner(
 		input rst,
 		output reg [7:0][31:0] qdigest);
 
-	//`include "sha256.sv"
-
-//	function int htonl(int x);
-//		return {x[7:0], x[15:8], x[23:16], x[31:24]};
-//	endfunction: htonl
-//	function int ntohl(int x);
-//		return {x[7:0], x[15:8], x[23:16], x[31:24]};
-//	endfunction: ntohl
-
 	reg [7:0][31:0] digest_init;
 	reg [7:0][31:0] digest_first_block;
 	reg [7:0][31:0] digest_second_block;
@@ -111,12 +102,6 @@ module fpga_miner_prenonce(
 		input  reg [7:0][31:0] merkle_root,
 		output reg [7:0][31:0] qdigest);
 
-	//`include "sha256.sv"
-
-//	function int htonl(int x);
-//		return {x[7:0], x[15:8], x[23:16], x[31:24]};
-//	endfunction: htonl
-
 	reg [7:0][31:0] digest_init;
 
 	initial
@@ -157,12 +142,6 @@ module fpga_miner_nonce(
 		input  int             target_bits,
 		input  int             nonce,
 		output reg [7:0][31:0] qdigest);
-
-	//`include "sha256.sv"
-
-//	function int htonl(int x);
-//		return {x[7:0], x[15:8], x[23:16], x[31:24]};
-//	endfunction: htonl
 
 	reg [7:0][31:0] digest_init;
 	reg [7:0][31:0] digest_second_block;
