@@ -4,11 +4,13 @@
 module bitcoin_miner(
 		input clk,
 		input rst,
-		output reg [7:0][31:0] qdigest);
+		output reg [7:0][31:0] qdigest,
+		output int nonce);
 
 	reg [7:0][31:0] digest_init;
 	reg [7:0][31:0] digest_first_block;
 	reg [7:0][31:0] digest_second_block;
+	reg [7:0][31:0] digest_block;
 
 	always @ (posedge clk) begin
 		sha256_init(digest_init);
@@ -52,7 +54,8 @@ module bitcoin_miner(
 			// Target bits
 			.W2 (htonl(32'h19015f53)),
 			// Nonce
-			.W3 (htonl(32'h33087548)),
+//			.W3 (htonl(32'h33087548)),
+			.W3 (htonl(nonce)),
 			// Padding
 			.W4 (32'h80000000),
 			.W5 (32'h00000000),
@@ -88,6 +91,7 @@ module bitcoin_miner(
 			.W15(32'h00000100),
 			.qdigest(qdigest));
 
+		nonce <= nonce + 1;
 	end
 	
 	always @ (posedge clk) begin
