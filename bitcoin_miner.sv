@@ -1,7 +1,7 @@
 `include "sha256_common.sv"
 `include "sha256.sv"
 
-module fpga_miner(
+module bitcoin_miner(
 		input clk,
 		input rst,
 		output reg [7:0][31:0] qdigest);
@@ -94,9 +94,9 @@ module fpga_miner(
 		$display("Calced %x\n", qdigest[3]);
 	end
 	
-endmodule: fpga_miner
+endmodule: bitcoin_miner
 
-module fpga_miner_prenonce(
+module bitcoin_miner_prenonce(
 		input  int             version,
 		input  reg [7:0][31:0] prev_block,
 		input  reg [7:0][31:0] merkle_root,
@@ -133,9 +133,9 @@ module fpga_miner_prenonce(
 			.W15(htonl(merkle_root[6])),
 			.qdigest(qdigest));
 	end
-endmodule: fpga_miner_prenonce
+endmodule: bitcoin_miner_prenonce
 
-module fpga_miner_nonce(
+module bitcoin_miner_nonce(
 		input  reg [7:0][31:0] digest,
 		input  reg [7:0][31:0] merkle_root,
 		input  int             timestamp,
@@ -195,9 +195,9 @@ module fpga_miner_nonce(
 			.W15(32'h00000100),
 			.qdigest(qdigest));
 	end
-endmodule: fpga_miner_nonce
+endmodule: bitcoin_miner_nonce
 
-module fpga_miner_test(
+module bitcoin_miner_test(
 		output reg [7:0][31:0] qdigest,
 		output reg [7:0][31:0] qdigest_prenonce,
 		output reg [7:0][31:0] qdigest_nonce);
@@ -233,13 +233,13 @@ module fpga_miner_test(
 		// Or e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 	end
 		// https://btc.com/0000000000000000e067a478024addfecdc93628978aa52d91fabd4292982a50
-		fpga_miner_prenonce fpga_test_prenonce(
+		bitcoin_miner_prenonce bitcoin_test_prenonce(
 			.version(32'h00000002),
 			.prev_block(256'h00000000_00000001_17c80378_b8da0e33_559b5997_f2ad55e2_f7d18ec1_975b9717),
 			.merkle_root(256'h871714dc_bae6c819_3a2bb9b2_a69fe1c0_440399f3_8d94b3a0_f1b44727_5a29978a),
 			.qdigest(qdigest_prenonce));
 		// qdigest_prenonce should be fc48d2df 95f0172e 4cbb9b8f c3c1b9e4 e536f7d5 cb1a5434 0c69421a dc6a3b8d
-		fpga_miner_nonce fpga_test_nonce(
+		bitcoin_miner_nonce bitcoin_test_nonce(
 			.digest(qdigest_prenonce),
 			.merkle_root(256'h871714dc_bae6c819_3a2bb9b2_a69fe1c0_440399f3_8d94b3a0_f1b44727_5a29978a),
 			.timestamp(32'h53058b35),  // 2014-02-19 23:57:25
@@ -249,4 +249,4 @@ module fpga_miner_test(
 		// qdigest_nonce should be 00000000 00000000 78a467e0 fedd4a02 2836c9cd 2da58a97 42bdfa91 502a9892
 		// Or 0000000000000000e067a478024addfecdc93628978aa52d91fabd4292982a50
 	//end
-endmodule: fpga_miner_test
+endmodule: bitcoin_miner_test
