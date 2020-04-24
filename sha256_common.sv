@@ -51,6 +51,18 @@ typedef struct packed {
 	reg [63:0][31:0] H;
 } sha256_state_t;
 
+typedef struct packed {
+	reg [63:0][31:0] W;
+	reg [31:0] A;
+	reg [31:0] B;
+	reg [31:0] C;
+	reg [31:0] D;
+	reg [31:0] E;
+	reg [31:0] F;
+	reg [31:0] G;
+	reg [31:0] H;
+} sha256_round_state_t;
+
 task sha_round_1(
 		input int t,
 		reg [7:0][31:0] digest,

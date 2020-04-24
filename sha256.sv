@@ -29,6 +29,45 @@ task sha256_init(
 	qdigest = {H7, H6, H5, H4, H3, H2, H1, H0};
 endtask: sha256_init
 
+task digest_cmp(
+		input reg [7:0][31:0] digest,
+		inout reg [7:0][31:0] qdigest);
+	if      (digest[7] < qdigest[7])
+		qdigest = digest;
+	else if (digest[7] > qdigest[7])
+		qdigest = qdigest;
+	else if (digest[6] < qdigest[6])
+		qdigest = digest;
+	else if (digest[6] > qdigest[6])
+		qdigest = qdigest;
+	else if (digest[5] < qdigest[5])
+		qdigest = digest;
+	else if (digest[5] > qdigest[5])
+		qdigest = qdigest;
+	else if (digest[4] < qdigest[4])
+		qdigest = digest;
+	else if (digest[4] > qdigest[4])
+		qdigest = qdigest;
+	else if (digest[3] < qdigest[3])
+		qdigest = digest;
+	else if (digest[3] > qdigest[3])
+		qdigest = qdigest;
+	else if (digest[2] < qdigest[2])
+		qdigest = digest;
+	else if (digest[2] > qdigest[2])
+		qdigest = qdigest;
+	else if (digest[1] < qdigest[1])
+		qdigest = digest;
+	else if (digest[1] > qdigest[1])
+		qdigest = qdigest;
+	else if (digest[0] < qdigest[0])
+		qdigest = digest;
+	else if (digest[0] > qdigest[0])
+		qdigest = qdigest;
+	else
+		qdigest = qdigest;
+endtask: digest_cmp
+
 task sha256_block(
 		input reg [7:0][31:0] digest,
 		input int W0,
@@ -147,5 +186,92 @@ task sha256_block(
 	};
 
 endtask: sha256_block
+
+task sha_once_round_1(
+		input int t,
+		reg [7:0][31:0] digest,
+		inout sha256_round_state_t state);
+	int T1, T2;
+	T1 = digest[7] + sigma1(digest[4]) + ch(digest[4], digest[5], digest[6]) + K[t] + state.W[t];
+	T2 = sigma0(digest[0]) + maj(digest[0], digest[1], digest[2]);
+	state.H   = digest[6];
+	state.G   = digest[5];
+	state.F   = digest[4];
+	state.E   = digest[3] + T1;
+	state.D   = digest[2];
+	state.C   = digest[1];
+	state.B   = digest[0];
+	state.A   = T1 + T2;
+endtask: sha_once_round_1
+
+task sha_once_round_16(
+		input int t,
+		inout sha256_round_state_t state);
+	int T1, T2;
+	T1 = state.H + sigma1(state.E) + ch(state.E, state.F, state.G) + K[t] + state.W[t];
+	T2 = sigma0(state.A) + maj(state.A, state.B, state.C);
+	state.H   = state.G;
+	state.G   = state.F;
+	state.F   = state.E;
+	state.E   = state.D + T1;
+	state.D   = state.C;
+	state.C   = state.B;
+	state.B   = state.A;
+	state.A   = T1 + T2;
+endtask: sha_once_round_16
+
+task sha_once_round(
+		input int t,
+		inout sha256_round_state_t state);
+	state.W[t] = state.W[t-16] + gamma0(state.W[t-15]) + state.W[t-7] + gamma1(state.W[t-2]);
+	sha_once_round_16(t, state);
+endtask: sha_once_round
+
+task sha256_round_block(
+		input int round,
+		input int W0,
+		input int W1,
+		input int W2,
+		input int W3,
+		input int W4,
+		input int W5,
+		input int W6,
+		input int W7,
+		input int W8,
+		input int W9,
+		input int W10,
+		input int W11,
+		input int W12,
+		input int W13,
+		input int W14,
+		input int W15,
+		inout sha256_round_state_t state,
+		inout reg [7:0][31:0] qdigest,
+		output reg qfinish);
+
+	if (round == 0) begin
+		state.W[15:0] = {W15, W14, W13, W12, W11, W10, W9, W8,
+							  W7,  W6,  W5,  W4,  W3,  W2,  W1, W0};
+		sha_once_round_1(round, qdigest, state);
+		qfinish = 0;
+		qdigest = qdigest;
+	end else if (round < 16) begin
+		sha_once_round_16(round, state);
+		qfinish = 0;
+		qdigest = qdigest;
+	end else begin
+		sha_once_round(round, state);
+
+		if (round == 63) begin
+			qdigest = {
+				qdigest[7] + state.H, qdigest[6] + state.G, qdigest[5] + state.F, qdigest[4] + state.E,
+				qdigest[3] + state.D, qdigest[2] + state.C, qdigest[1] + state.B, qdigest[0] + state.A
+			};
+			qfinish = 1;
+		end else
+			qfinish = 0;
+			qdigest = qdigest;
+	end
+endtask: sha256_round_block
 
 `endif
