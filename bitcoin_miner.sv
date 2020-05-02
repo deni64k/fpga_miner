@@ -9,8 +9,8 @@ module bitcoin_miner(
 		output reg [7:0] qleds);
 
 	reg finish;
-	reg [31:0] round;
-	reg [31:0] step;
+	reg [7:0] round;
+	reg [4:0] step;
 	sha256_round_state_t state;
 	reg [7:0][31:0] digest0;
 	reg [7:0][31:0] digest_current;
@@ -18,144 +18,157 @@ module bitcoin_miner(
 	initial begin
 		round = 0;
 		step = 0;
-		nonce = 32'h33000000;//32'h33087548;
+		//nonce = 0;//32'h33087548;
+		nonce = 32'h33080000;
 		qdigest = {32'hffffffff, 32'hffffffff, 32'hffffffff, 32'hffffffff,
 		           32'hffffffff, 32'hffffffff, 32'hffffffff, 32'hffffffff};
 	end
 
-//	always @ (posedge rst) begin
-//		round = 0;
-//		step = 0;
-//		nonce = 0;
-//		sha256_init(qdigest);
-//	end
-
-	always @ (posedge clk) begin
+	wire clk_hash;
+//	`ifndef SIM
+//		pll pll_blk(clk, clk_hash);
+//	`else
+		assign clk_hash = clk;
+//	`endif
+	
+	always @ (posedge clk_hash or negedge rst) begin
 		finish = 0;
 
-		case (step)
-		0: begin
-			sha256_init(digest_current);
+		if (!rst) begin
+			round = 0;
+			step = 0;
+			nonce = 32'h33080000;
+			qdigest = {32'hffffffff, 32'hffffffff, 32'hffffffff, 32'hffffffff,
+						  32'hffffffff, 32'hffffffff, 32'hffffffff, 32'hffffffff};
+		end else begin
+			case (step)
+			0: begin
+				sha256_init(digest_current);
 
-			//	defparameter version     = 32'h00000002
-			// prev_block  = 00000000_00000001_17c80378_b8da0e33_559b5997_f2ad55e2_f7d18ec1_975b9717
-			// merkle_root = 871714dc_bae6c819_3a2bb9b2_a69fe1c0_440399f3_8d94b3a0_f1b44727_5a29978a
-			// timestamp   = 32'h53058b35
-			// bits        = 32'h19015f53
-			// nonce       = 32'h33087548
+//				//	defparameter version     = 32'h00000002
+//				// prev_block  = 00000000_00000001_17c80378_b8da0e33_559b5997_f2ad55e2_f7d18ec1_975b9717
+//				// merkle_root = 871714dc_bae6c819_3a2bb9b2_a69fe1c0_440399f3_8d94b3a0_f1b44727_5a29978a
+//				// timestamp   = 32'h53058b35
+//				// bits        = 32'h19015f53
+//				// nonce       = 32'h33087548
+//
+				sha256_round_block(
+					.round(round),
+					// Version
+					.W0 (htonl(32'h00000002)),
+					// Previous block
+					.W1 (htonl(32'h975b9717)),
+					.W2 (htonl(32'hf7d18ec1)),
+					.W3 (htonl(32'hf2ad55e2)),
+					.W4 (htonl(32'h559b5997)),
+					.W5 (htonl(32'hb8da0e33)),
+					.W6 (htonl(32'h17c80378)),
+					.W7 (htonl(32'h00000001)),
+					.W8 (htonl(32'h00000000)),
+					// Merkle root
+					.W9 (htonl(32'h5a29978a)),
+					.W10(htonl(32'hf1b44727)),
+					.W11(htonl(32'h8d94b3a0)),
+					.W12(htonl(32'h440399f3)),
+					.W13(htonl(32'ha69fe1c0)),
+					.W14(htonl(32'h3a2bb9b2)),
+					.W15(htonl(32'hbae6c819)),
+					.state(state),
+					.qdigest(digest_current),
+					.qfinish(finish));
+					
+				if (finish == 1) begin
+					round = 0;
+					step = 1;
+				end
+			end
+			1: begin
+				sha256_round_block(
+					.round(round),
+					// Merkle root (last int)
+					.W0 (htonl(32'h871714dc)),
+					// Timestamp
+					.W1 (htonl(32'h53058b35)),
+					// Target bits
+					.W2 (htonl(32'h19015f53)),
+					// Nonce
+					.W3 (htonl(nonce)),
+					// Padding
+					.W4 (32'h80000000),
+					.W5 (32'h00000000),
+					.W6 (32'h00000000),
+					.W7 (32'h00000000),
+					.W8 (32'h00000000),
+					.W9 (32'h00000000),
+					.W10(32'h00000000),
+					.W11(32'h00000000),
+					.W12(32'h00000000),
+					.W13(32'h00000000),
+					.W14(32'h00000000),
+					.W15(32'h00000280),
+					.state(state),
+					.qdigest(digest_current),
+					.qfinish(finish));
 
-			sha256_round_block(
-				.round(round),
-				// Version
-				.W0 (htonl(32'h00000002)),
-				// Previous block
-				.W1 (htonl(32'h975b9717)),
-				.W2 (htonl(32'hf7d18ec1)),
-				.W3 (htonl(32'hf2ad55e2)),
-				.W4 (htonl(32'h559b5997)),
-				.W5 (htonl(32'hb8da0e33)),
-				.W6 (htonl(32'h17c80378)),
-				.W7 (htonl(32'h00000001)),
-				.W8 (htonl(32'h00000000)),
-				// Merkle root
-				.W9 (htonl(32'h5a29978a)),
-				.W10(htonl(32'hf1b44727)),
-				.W11(htonl(32'h8d94b3a0)),
-				.W12(htonl(32'h440399f3)),
-				.W13(htonl(32'ha69fe1c0)),
-				.W14(htonl(32'h3a2bb9b2)),
-				.W15(htonl(32'hbae6c819)),
-				.state(state),
-				.qdigest(digest_current),
-				.qfinish(finish));
+				if (finish == 1) begin
+					round = 0;
+					step = 2;
+				end
+			end
+			2: begin
+				sha256_init(digest0);
+
+				sha256_round_block(
+					.round(round),
+					.W0 (digest_current[0]),
+					.W1 (digest_current[1]),
+					.W2 (digest_current[2]),
+					.W3 (digest_current[3]),
+					.W4 (digest_current[4]),
+					.W5 (digest_current[5]),
+					.W6 (digest_current[6]),
+					.W7 (digest_current[7]),
+					.W8 (32'h80000000),
+					.W9 (32'h00000000),
+					.W10(32'h00000000),
+					.W11(32'h00000000),
+					.W12(32'h00000000),
+					.W13(32'h00000000),
+					.W14(32'h00000000),
+					.W15(32'h00000100),
+					.state(state),
+					.qdigest(digest0),
+					.qfinish(finish));
 				
-			if (finish == 1) begin
-				round = 0;
-				step = 1;
-			end else
-				round = round + 1;
-		end
-		1: begin
-			sha256_round_block(
-				.round(round),
-				// Merkle root (last int)
-				.W0 (htonl(32'h871714dc)),
-				// Timestamp
-				.W1 (htonl(32'h53058b35)),
-				// Target bits
-				.W2 (htonl(32'h19015f53)),
-				// Nonce
-				.W3 (htonl(nonce)),
-				// Padding
-				.W4 (32'h80000000),
-				.W5 (32'h00000000),
-				.W6 (32'h00000000),
-				.W7 (32'h00000000),
-				.W8 (32'h00000000),
-				.W9 (32'h00000000),
-				.W10(32'h00000000),
-				.W11(32'h00000000),
-				.W12(32'h00000000),
-				.W13(32'h00000000),
-				.W14(32'h00000000),
-				.W15(32'h00000280),
-				.state(state),
-				.qdigest(digest_current),
-				.qfinish(finish));
+				if (finish == 1) begin
+					round = 0;
+					step = 0;
+					nonce++;
+					digest_current = digest0;
+					
+					digest_cmp(digest_current, qdigest);
+				end
+			end
+			endcase
 
-			if (finish == 1) begin
-				round = 0;
-				step = 2;
-			end else
-				round = round + 1;
-		end
-		2: begin
-			sha256_init(digest0);
+//			qleds[7] = qdigest[7][31:24] != 8'h00;
+//			qleds[6] = qdigest[7][23:16] != 8'h00;
+//			qleds[5] = qdigest[7][15:8]  != 8'h00;
+//			qleds[4] = qdigest[7][7:0]   != 8'h00;
+//			qleds[3] = qdigest[6][31:24] != 8'h00;
+//			qleds[2] = qdigest[6][23:16] != 8'h00;
+//			qleds[1] = qdigest[6][15:8]  != 8'h00;
+//			qleds[0] = qdigest[6][7:0]   != 8'h00;
 
-			sha256_round_block(
-				.round(round),
-				.W0 (digest_current[0]),
-				.W1 (digest_current[1]),
-				.W2 (digest_current[2]),
-				.W3 (digest_current[3]),
-				.W4 (digest_current[4]),
-				.W5 (digest_current[5]),
-				.W6 (digest_current[6]),
-				.W7 (digest_current[7]),
-				.W8 (32'h80000000),
-				.W9 (32'h00000000),
-				.W10(32'h00000000),
-				.W11(32'h00000000),
-				.W12(32'h00000000),
-				.W13(32'h00000000),
-				.W14(32'h00000000),
-				.W15(32'h00000100),
-				.state(state),
-				.qdigest(digest0),
-				.qfinish(finish));
-			
-			if (finish == 1) begin
-				round = 0;
-				step = 0;
-				nonce = nonce + 32'h00000001;
-				digest_current = digest0;
-				
-				digest_cmp(digest_current, qdigest);
-			end else
-				round = round + 1;
+			qleds[7] = qdigest[7][31:0] != 32'h0;
+			qleds[6] = qdigest[6][31:0] != 32'h0;
+			qleds[5] = qdigest[5][31:0] != 32'h0;
+			qleds[4] = qdigest[4][31:0] != 32'h0;
+			qleds[3] = qdigest[3][31:0] != 32'h0;
+			qleds[2] = qdigest[2][31:0] != 32'h0;
+			qleds[1] = qdigest[1][31:0] != 32'h0;
+			qleds[0] = qdigest[0][31:0] != 32'h0;
 		end
-		endcase
-		finish = 0;
-//		for (int i = 0; i < 8; i++)
-//			qleds[i] = qdigest[i] != 32'h00000000;
-		qleds[7] = qdigest[7][31:24] != 8'h00;
-		qleds[6] = qdigest[7][23:16] != 8'h00;
-		qleds[5] = qdigest[7][15:8]  != 8'h00;
-		qleds[4] = qdigest[7][7:0]   != 8'h00;
-		qleds[3] = qdigest[6][31:24] != 8'h00;
-		qleds[2] = qdigest[6][23:16] != 8'h00;
-		qleds[1] = qdigest[6][15:8]  != 8'h00;
-		qleds[0] = qdigest[6][7:0]   != 8'h00;
 	end
 endmodule: bitcoin_miner
 
